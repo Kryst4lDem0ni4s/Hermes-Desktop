@@ -66,6 +66,10 @@ public sealed partial class FileBrowserPanel : UserControl
         {
             BreadcrumbText.Text = $"Error: {ex.Message}";
         }
+
+        EmptyState.Visibility = FileTree.RootNodes.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void FileTree_Expanding(TreeView sender, TreeViewExpandingEventArgs args)

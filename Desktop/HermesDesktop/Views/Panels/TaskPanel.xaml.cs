@@ -56,6 +56,9 @@ public sealed partial class TaskPanel : UserControl
             });
         }
         TaskList.ItemsSource = Tasks;
+        EmptyState.Visibility = Tasks.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e) => Refresh();

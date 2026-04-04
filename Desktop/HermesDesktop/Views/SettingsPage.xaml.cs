@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using HermesDesktop.Services;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
@@ -12,13 +14,8 @@ public sealed partial class SettingsPage : Page
     public SettingsPage()
     {
         InitializeComponent();
+        Loaded += OnPageLoaded;
     }
-
-    public string Provider => HermesEnvironment.DisplayModelProvider;
-
-    public string BaseUrl => HermesEnvironment.DisplayModelBaseUrl;
-
-    public string DefaultModel => HermesEnvironment.DisplayDefaultModel;
 
     public string HermesHomePath => HermesEnvironment.DisplayHermesHomePath;
 
@@ -35,6 +32,50 @@ public sealed partial class SettingsPage : Page
     public string DiscordStatus => HermesEnvironment.DiscordConfigured
         ? ResourceLoader.GetString("StatusDetected")
         : ResourceLoader.GetString("StatusNotDetected");
+
+    private void OnPageLoaded(object sender, RoutedEventArgs e)
+    {
+        // Pre-populate fields from current config
+        var provider = HermesEnvironment.ModelProvider.ToLowerInvariant();
+        var matchIndex = provider switch
+        {
+            "openai" => 0,
+            "anthropic" => 1,
+            _ => 2
+        };
+        ProviderCombo.SelectedIndex = matchIndex;
+
+        BaseUrlBox.Text = HermesEnvironment.ModelBaseUrl;
+        ModelBox.Text = HermesEnvironment.DefaultModel;
+        ApiKeyBox.Password = HermesEnvironment.ModelApiKey ?? "";
+    }
+
+    private async void SaveModelConfig_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var providerTag = (ProviderCombo.SelectedItem as ComboBoxItem)?.Tag?.ToString() ?? "custom";
+            var baseUrl = BaseUrlBox.Text.Trim();
+            var model = ModelBox.Text.Trim();
+            var apiKey = ApiKeyBox.Password.Trim();
+
+            if (string.IsNullOrEmpty(model))
+            {
+                ModelSaveStatus.Text = "Model name is required.";
+                ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+                return;
+            }
+
+            await HermesEnvironment.SaveModelConfigAsync(providerTag, baseUrl, model, apiKey);
+            ModelSaveStatus.Text = "Saved successfully. Restart to apply.";
+            ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOnlineBrush"];
+        }
+        catch (Exception ex)
+        {
+            ModelSaveStatus.Text = $"Error: {ex.Message}";
+            ModelSaveStatus.Foreground = (Microsoft.UI.Xaml.Media.Brush)Application.Current.Resources["ConnectionOfflineBrush"];
+        }
+    }
 
     private void OpenHome_Click(object sender, RoutedEventArgs e)
     {

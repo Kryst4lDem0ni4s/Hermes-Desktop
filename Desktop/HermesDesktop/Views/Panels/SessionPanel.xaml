@@ -13,8 +13,14 @@
         <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="6" Margin="0,0,0,8">
             <TextBox x:Name="SearchBox" PlaceholderText="Search sessions..." Width="160" FontSize="12"/>
             <Button x:Name="NewSessionBtn" Content="+" Click="NewSession_Click" CornerRadius="6" Padding="8,4"
-                    Background="{StaticResource AppAccentBrush}" Foreground="White" ToolTipService.ToolTip="New session"/>
+                    Background="{StaticResource AppAccentGradientBrush}" Foreground="#16110D" ToolTipService.ToolTip="New session"/>
         </StackPanel>
+
+        <TextBlock Grid.Row="2" x:Name="EmptyState" Visibility="Collapsed"
+                   Text="No conversations yet.&#x0a;Start chatting to create your first session."
+                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" FontSize="13" Opacity="0.7"/>
 
         <ListView Grid.Row="2" x:Name="SessionList" SelectionChanged="SessionList_SelectionChanged"
                   Background="Transparent">

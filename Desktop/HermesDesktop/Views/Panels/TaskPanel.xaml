@@ -11,6 +11,12 @@
                     Background="Transparent" Foreground="{StaticResource AppTextSecondaryBrush}"/>
         </StackPanel>
 
+        <TextBlock Grid.Row="1" x:Name="EmptyState" Visibility="Collapsed"
+                   Text="No tasks yet.&#x0a;Tasks are created by the agent during work."
+                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" FontSize="13" Opacity="0.7"/>
+
         <ListView Grid.Row="1" x:Name="TaskList" Background="Transparent">
             <ListView.ItemTemplate>
                 <DataTemplate>

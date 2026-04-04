@@ -61,6 +61,9 @@ public sealed partial class SessionPanel : UserControl
         }
 
         SessionList.ItemsSource = Sessions;
+        EmptyState.Visibility = Sessions.Count == 0
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
     }
 
     private void NewSession_Click(object sender, RoutedEventArgs e) => SessionSelected?.Invoke("");

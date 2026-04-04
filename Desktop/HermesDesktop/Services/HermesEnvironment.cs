@@ -1,7 +1,10 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Globalization;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace HermesDesktop.Services;
 
@@ -187,6 +190,125 @@ internal static class HermesEnvironment
         }
 
         return value;
+    }
+
+    /// <summary>Write model configuration to config.yaml.</summary>
+    internal static async Task SaveModelConfigAsync(string provider, string baseUrl, string model, string apiKey)
+    {
+        var configPath = HermesConfigPath;
+        var dir = Path.GetDirectoryName(configPath);
+        if (dir is not null && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var settings = new Dictionary<string, string>
+        {
+            ["provider"] = provider,
+            ["base_url"] = baseUrl,
+            ["default"] = model,
+        };
+
+        if (!string.IsNullOrWhiteSpace(apiKey))
+            settings["api_key"] = apiKey;
+
+        await WriteYamlSectionAsync(configPath, "model", settings);
+    }
+
+    /// <summary>Write an integration token to config.yaml under the integrations section.</summary>
+    internal static async Task SaveIntegrationTokenAsync(string key, string value)
+    {
+        var configPath = HermesConfigPath;
+        var dir = Path.GetDirectoryName(configPath);
+        if (dir is not null && !Directory.Exists(dir))
+            Directory.CreateDirectory(dir);
+
+        var settings = new Dictionary<string, string>
+        {
+            [key] = value,
+        };
+
+        await WriteYamlSectionAsync(configPath, "integrations", settings);
+    }
+
+    /// <summary>Read a value from the integrations section of config.yaml.</summary>
+    internal static string? ReadIntegrationSetting(string key)
+    {
+        if (!File.Exists(HermesConfigPath))
+            return null;
+
+        bool inSection = false;
+        foreach (string rawLine in File.ReadLines(HermesConfigPath))
+        {
+            string line = rawLine.TrimEnd();
+            if (string.IsNullOrWhiteSpace(line) || line.TrimStart().StartsWith("#", StringComparison.Ordinal))
+                continue;
+
+            if (!char.IsWhiteSpace(rawLine, 0) && line.EndsWith(":", StringComparison.Ordinal))
+            {
+                inSection = string.Equals(line, "integrations:", StringComparison.OrdinalIgnoreCase);
+                continue;
+            }
+
+            if (!inSection) continue;
+
+            string trimmed = line.Trim();
+            string prefix = $"{key}:";
+            if (trimmed.StartsWith(prefix, StringComparison.OrdinalIgnoreCase))
+                return trimmed[prefix.Length..].Trim().Trim('"', '\'');
+        }
+
+        return null;
+    }
+
+    private static async Task WriteYamlSectionAsync(string configPath, string sectionName, Dictionary<string, string> settings)
+    {
+        var lines = File.Exists(configPath)
+            ? (await File.ReadAllLinesAsync(configPath)).ToList()
+            : new List<string>();
+
+        // Find section boundaries
+        int sectionStart = -1;
+        int sectionEnd = lines.Count;
+        for (int i = 0; i < lines.Count; i++)
+        {
+            string raw = lines[i];
+            string trimmed = raw.TrimEnd();
+            if (string.IsNullOrWhiteSpace(trimmed)) continue;
+
+            if (!char.IsWhiteSpace(raw, 0) && trimmed.EndsWith(":", StringComparison.Ordinal))
+            {
+                if (string.Equals(trimmed, $"{sectionName}:", StringComparison.OrdinalIgnoreCase))
+                {
+                    sectionStart = i;
+                }
+                else if (sectionStart >= 0 && sectionEnd == lines.Count)
+                {
+                    sectionEnd = i;
+                }
+            }
+        }
+
+        // Build new section lines
+        var newSection = new List<string> { $"{sectionName}:" };
+        foreach (var kv in settings)
+        {
+            newSection.Add($"  {kv.Key}: {kv.Value}");
+        }
+
+        if (sectionStart >= 0)
+        {
+            // Replace existing section
+            lines.RemoveRange(sectionStart, sectionEnd - sectionStart);
+            lines.InsertRange(sectionStart, newSection);
+        }
+        else
+        {
+            // Append new section
+            if (lines.Count > 0 && !string.IsNullOrWhiteSpace(lines[^1]))
+                lines.Add("");
+            lines.AddRange(newSection);
+        }
+
+        await File.WriteAllLinesAsync(configPath, lines);
     }
 
     private static string? ReadModelSetting(string key)

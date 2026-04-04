@@ -16,11 +16,24 @@
             <SolidColorBrush x:Key="AppPanelBrush" Color="#202731" />
             <SolidColorBrush x:Key="AppStrokeBrush" Color="#2A313C" />
             <SolidColorBrush x:Key="AppSubtleStrokeBrush" Color="#202731" />
-            <SolidColorBrush x:Key="AppAccentBrush" Color="#E38B52" />
-            <SolidColorBrush x:Key="AppAccentTextBrush" Color="#F2B283" />
+            <!-- Hermes gradient palette: caramel → goldenrod → golden yellow -->
+            <SolidColorBrush x:Key="AppAccentBrush" Color="#D4A017" />
+            <SolidColorBrush x:Key="AppAccentTextBrush" Color="#FFD700" />
             <SolidColorBrush x:Key="AppTextSecondaryBrush" Color="#95A2B1" />
-            <SolidColorBrush x:Key="AppUserBubbleBrush" Color="#2A231E" />
-            <SolidColorBrush x:Key="AppHeroAccentBrush" Color="#F2A365" />
+            <SolidColorBrush x:Key="AppUserBubbleBrush" Color="#1E1A0A" />
+            <SolidColorBrush x:Key="AppHeroAccentBrush" Color="#FFD700" />
+            <SolidColorBrush x:Key="AppAccentDarkBrush" Color="#C68E17" />
+            <SolidColorBrush x:Key="AppOutlineBrush" Color="#3A3A00" />
+            <LinearGradientBrush x:Key="AppAccentGradientBrush" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#C68E17" Offset="0.0" />
+                <GradientStop Color="#D4A017" Offset="0.5" />
+                <GradientStop Color="#FFD700" Offset="1.0" />
+            </LinearGradientBrush>
+            <LinearGradientBrush x:Key="AppAccentGradientVerticalBrush" StartPoint="0,0" EndPoint="0,1">
+                <GradientStop Color="#FFD700" Offset="0.0" />
+                <GradientStop Color="#D4A017" Offset="0.5" />
+                <GradientStop Color="#C68E17" Offset="1.0" />
+            </LinearGradientBrush>
             <SolidColorBrush x:Key="ConnectionOnlineBrush" Color="#49C27D" />
             <SolidColorBrush x:Key="ConnectionOfflineBrush" Color="#FF8A65" />
 

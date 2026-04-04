@@ -40,6 +40,9 @@ public sealed partial class SkillsPanel : UserControl
             });
         }
         SkillsList.ItemsSource = _allSkills;
+        EmptyState.Visibility = _allSkills.Count == 0
+            ? Microsoft.UI.Xaml.Visibility.Visible
+            : Microsoft.UI.Xaml.Visibility.Collapsed;
         await System.Threading.Tasks.Task.CompletedTask;
     }
 

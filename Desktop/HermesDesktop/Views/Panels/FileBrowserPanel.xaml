@@ -14,6 +14,12 @@
         <TextBlock Grid.Row="1" x:Name="BreadcrumbText" FontSize="11"
                    Foreground="{StaticResource AppTextSecondaryBrush}" TextTrimming="CharacterEllipsis" Margin="0,0,0,6"/>
 
+        <TextBlock Grid.Row="2" x:Name="EmptyState" Visibility="Collapsed"
+                   Text="No workspace files found.&#x0a;Set your workspace directory in Settings."
+                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" FontSize="13" Opacity="0.7"/>
+
         <!-- File tree -->
         <TreeView Grid.Row="2" x:Name="FileTree" ItemInvoked="FileTree_ItemInvoked" Background="Transparent">
             <TreeView.ItemTemplate>

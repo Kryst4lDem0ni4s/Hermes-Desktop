@@ -9,6 +9,12 @@
         <TextBox Grid.Row="1" x:Name="SearchBox" PlaceholderText="Search skills..." FontSize="12" Margin="0,0,0,8"
                  TextChanged="SearchBox_TextChanged"/>
 
+        <TextBlock Grid.Row="2" x:Name="EmptyState" Visibility="Collapsed"
+                   Text="No skills installed.&#x0a;Add .md skill files to the skills directory."
+                   Foreground="{StaticResource AppTextSecondaryBrush}"
+                   HorizontalAlignment="Center" VerticalAlignment="Center"
+                   TextAlignment="Center" FontSize="13" Opacity="0.7"/>
+
         <ListView Grid.Row="2" x:Name="SkillsList" SelectionChanged="SkillsList_SelectionChanged" Background="Transparent">
             <ListView.ItemTemplate>
                 <DataTemplate>

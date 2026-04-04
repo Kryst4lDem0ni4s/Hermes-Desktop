@@ -113,7 +113,7 @@
                             Foreground="White" TextWrapping="Wrap" />
 
                         <Button x:Name="SendButton" Grid.Column="1" Content="Send" Click="SendPrompt_Click"
-                            Background="{StaticResource AppAccentBrush}" BorderBrush="{StaticResource AppAccentBrush}"
+                            Background="{StaticResource AppAccentGradientBrush}" BorderBrush="{StaticResource AppAccentDarkBrush}"
                             Foreground="#16110D" VerticalAlignment="Bottom" Padding="30,10" />
                     </Grid>
                 </Grid>

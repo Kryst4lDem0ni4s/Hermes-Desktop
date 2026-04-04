@@ -26,6 +26,7 @@
                 </StackPanel>
             </Border>
 
+            <!-- Editable Model Configuration -->
             <Grid ColumnSpacing="20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -37,50 +38,57 @@
                         <TextBlock
                             x:Uid="SettingsRuntimeTitle"
                             Style="{StaticResource SectionTitleTextStyle}" />
-                        <Grid ColumnSpacing="18" RowSpacing="14">
-                            <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="140" />
-                                <ColumnDefinition Width="*" />
-                            </Grid.ColumnDefinitions>
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                                <RowDefinition Height="Auto" />
-                            </Grid.RowDefinitions>
 
-                            <TextBlock
-                                x:Uid="SettingsProviderLabel"
-                                Grid.Row="0"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Row="0"
-                                Grid.Column="1"
-                                Text="{x:Bind Provider, Mode=OneTime}"
-                                TextWrapping="Wrap" />
+                        <StackPanel Spacing="12">
+                            <!-- Provider -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="PROVIDER" Style="{StaticResource LabelTextStyle}"/>
+                                <ComboBox x:Name="ProviderCombo" HorizontalAlignment="Stretch"
+                                          Background="{StaticResource AppInsetBrush}"
+                                          BorderBrush="{StaticResource AppStrokeBrush}">
+                                    <ComboBoxItem Content="OpenAI" Tag="openai"/>
+                                    <ComboBoxItem Content="Anthropic" Tag="anthropic"/>
+                                    <ComboBoxItem Content="Custom / Local" Tag="custom"/>
+                                </ComboBox>
+                            </StackPanel>
 
-                            <TextBlock
-                                x:Uid="SettingsBaseUrlLabel"
-                                Grid.Row="1"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Row="1"
-                                Grid.Column="1"
-                                Text="{x:Bind BaseUrl, Mode=OneTime}"
-                                TextWrapping="Wrap" />
+                            <!-- Base URL -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="BASE URL" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox x:Name="BaseUrlBox" PlaceholderText="http://127.0.0.1:11434/v1"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                            </StackPanel>
 
-                            <TextBlock
-                                x:Uid="SettingsModelLabel"
-                                Grid.Row="2"
-                                Grid.Column="0"
-                                Style="{StaticResource LabelTextStyle}" />
-                            <TextBlock
-                                Grid.Row="2"
-                                Grid.Column="1"
-                                Text="{x:Bind DefaultModel, Mode=OneTime}"
-                                TextWrapping="Wrap" />
-                        </Grid>
+                            <!-- Model -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="MODEL" Style="{StaticResource LabelTextStyle}"/>
+                                <TextBox x:Name="ModelBox" PlaceholderText="gpt-4o / claude-sonnet-4-20250514 / local-model"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                            </StackPanel>
+
+                            <!-- API Key -->
+                            <StackPanel Spacing="4">
+                                <TextBlock Text="API KEY" Style="{StaticResource LabelTextStyle}"/>
+                                <PasswordBox x:Name="ApiKeyBox" PlaceholderText="sk-... (leave blank for local)"
+                                             Background="{StaticResource AppInsetBrush}"
+                                             BorderBrush="{StaticResource AppStrokeBrush}"
+                                             Foreground="White"/>
+                            </StackPanel>
+
+                            <!-- Save + Feedback -->
+                            <StackPanel Orientation="Horizontal" Spacing="12">
+                                <Button x:Name="SaveModelBtn" Content="Save Model Config" Click="SaveModelConfig_Click"
+                                        Background="{StaticResource AppAccentGradientBrush}"
+                                        BorderBrush="{StaticResource AppAccentDarkBrush}"
+                                        Foreground="#16110D" Padding="20,8"/>
+                                <TextBlock x:Name="ModelSaveStatus" VerticalAlignment="Center"
+                                           Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13"/>
+                            </StackPanel>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 

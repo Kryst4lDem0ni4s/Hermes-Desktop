@@ -24,6 +24,9 @@ public sealed partial class BuddyPanel : UserControl
         {
             var buddy = await _buddyService.GetBuddyAsync("desktop-user", CancellationToken.None);
 
+            EmptyState.Visibility = Microsoft.UI.Xaml.Visibility.Collapsed;
+            BuddyContent.Visibility = Microsoft.UI.Xaml.Visibility.Visible;
+
             AsciiArtText.Text = BuddyRenderer.RenderAscii(buddy);
             BuddyNameText.Text = buddy.Name ?? "Unnamed";
             SpeciesText.Text = buddy.Species;

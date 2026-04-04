@@ -37,7 +37,12 @@ public sealed partial class MemoryPanel : UserControl
     public void Refresh()
     {
         Memories.Clear();
-        if (!Directory.Exists(_memoryDir)) { MemoryList.ItemsSource = Memories; return; }
+        if (!Directory.Exists(_memoryDir))
+        {
+            MemoryList.ItemsSource = Memories;
+            EmptyState.Visibility = Visibility.Visible;
+            return;
+        }
 
         foreach (var file in Directory.EnumerateFiles(_memoryDir, "*.md").OrderByDescending(f => File.GetLastWriteTimeUtc(f)))
         {
@@ -76,6 +81,9 @@ public sealed partial class MemoryPanel : UserControl
             catch { /* skip unreadable */ }
         }
         MemoryList.ItemsSource = Memories;
+        EmptyState.Visibility = Memories.Count == 0
+            ? Visibility.Visible
+            : Visibility.Collapsed;
     }
 
     private void MemoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)

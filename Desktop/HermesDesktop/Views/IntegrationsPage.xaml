@@ -26,37 +26,72 @@
                 </StackPanel>
             </Border>
 
+            <!-- Configurable Token Cards -->
             <Grid ColumnSpacing="20">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
 
+                <!-- Telegram -->
                 <Border Grid.Column="0" Style="{StaticResource SurfaceCardStyle}">
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="12">
                         <TextBlock
                             x:Uid="IntegrationsTelegramTitle"
                             Style="{StaticResource SectionTitleTextStyle}" />
-                        <TextBlock
-                            Style="{StaticResource MetricValueTextStyle}"
-                            Text="{x:Bind TelegramStatus, Mode=OneTime}" />
-                        <TextBlock
-                            x:Uid="IntegrationsTelegramDetail"
-                            Style="{StaticResource BodySecondaryTextStyle}" />
+                        <TextBlock x:Name="TelegramStatusText"
+                            Style="{StaticResource MetricValueTextStyle}" />
+                        <TextBlock x:Name="TelegramMaskedText" FontSize="13"
+                            Foreground="{StaticResource AppTextSecondaryBrush}" />
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="BOT TOKEN" Style="{StaticResource LabelTextStyle}"/>
+                            <PasswordBox x:Name="TelegramTokenBox"
+                                         PlaceholderText="Paste your Telegram bot token"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Save Telegram Token" Click="SaveTelegram_Click"
+                                    Background="{StaticResource AppAccentGradientBrush}"
+                                    BorderBrush="{StaticResource AppAccentDarkBrush}"
+                                    Foreground="#16110D" Padding="16,8"/>
+                            <TextBlock x:Name="TelegramSaveStatus" VerticalAlignment="Center"
+                                       Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
 
+                <!-- Discord -->
                 <Border Grid.Column="1" Style="{StaticResource SurfaceCardStyle}">
-                    <StackPanel Spacing="10">
+                    <StackPanel Spacing="12">
                         <TextBlock
                             x:Uid="IntegrationsDiscordTitle"
                             Style="{StaticResource SectionTitleTextStyle}" />
-                        <TextBlock
-                            Style="{StaticResource MetricValueTextStyle}"
-                            Text="{x:Bind DiscordStatus, Mode=OneTime}" />
-                        <TextBlock
-                            x:Uid="IntegrationsDiscordDetail"
-                            Style="{StaticResource BodySecondaryTextStyle}" />
+                        <TextBlock x:Name="DiscordStatusText"
+                            Style="{StaticResource MetricValueTextStyle}" />
+                        <TextBlock x:Name="DiscordMaskedText" FontSize="13"
+                            Foreground="{StaticResource AppTextSecondaryBrush}" />
+
+                        <StackPanel Spacing="4">
+                            <TextBlock Text="BOT TOKEN" Style="{StaticResource LabelTextStyle}"/>
+                            <PasswordBox x:Name="DiscordTokenBox"
+                                         PlaceholderText="Paste your Discord bot token"
+                                         Background="{StaticResource AppInsetBrush}"
+                                         BorderBrush="{StaticResource AppStrokeBrush}"
+                                         Foreground="White"/>
+                        </StackPanel>
+
+                        <StackPanel Orientation="Horizontal" Spacing="12">
+                            <Button Content="Save Discord Token" Click="SaveDiscord_Click"
+                                    Background="{StaticResource AppAccentGradientBrush}"
+                                    BorderBrush="{StaticResource AppAccentDarkBrush}"
+                                    Foreground="#16110D" Padding="16,8"/>
+                            <TextBlock x:Name="DiscordSaveStatus" VerticalAlignment="Center"
+                                       Foreground="{StaticResource AppTextSecondaryBrush}" FontSize="13"/>
+                        </StackPanel>
                     </StackPanel>
                 </Border>
             </Grid>
