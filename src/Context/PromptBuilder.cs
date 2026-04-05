@@ -50,6 +50,7 @@ public sealed class PromptBuilder
         return new PromptPacket
         {
             SystemPrompt = _systemPrompt,
+            SoulContext = request.SoulContext,
             SessionStateJson = stateJson,
             RetrievedContext = request.RetrievedContext,
             RecentTurns = request.RecentTurns,
@@ -69,6 +70,17 @@ public sealed class PromptBuilder
     public List<Message> ToOpenAiMessages(PromptPacket packet)
     {
         var messages = new List<Message>();
+
+        // Layer 0: Soul context (identity, user profile, project rules, learned behaviors)
+        // Changes extremely rarely — excellent cache anchor. Injected before system prompt.
+        if (!string.IsNullOrWhiteSpace(packet.SoulContext))
+        {
+            messages.Add(new Message
+            {
+                Role = "system",
+                Content = packet.SoulContext
+            });
+        }
 
         // Layer 1: Stable system prompt (cache anchor — never changes)
         messages.Add(new Message
@@ -139,6 +151,9 @@ public sealed class BuildRequest
 
     /// <summary>Optional context chunks retrieved on demand (e.g. from memory or search).</summary>
     public List<string>? RetrievedContext { get; init; }
+
+    /// <summary>Optional assembled soul context (identity, user profile, project rules, learned behaviors).</summary>
+    public string? SoulContext { get; init; }
 }
 
 /// <summary>Assembled prompt ready for conversion to provider message format.</summary>
@@ -152,6 +167,9 @@ public sealed class PromptPacket
 
     /// <summary>Optional retrieved context chunks.</summary>
     public List<string>? RetrievedContext { get; init; }
+
+    /// <summary>Assembled soul context (identity, user profile, project rules, learned behaviors).</summary>
+    public string? SoulContext { get; init; }
 
     /// <summary>Recent conversation turns from the sliding window.</summary>
     public List<Message> RecentTurns { get; init; } = new();

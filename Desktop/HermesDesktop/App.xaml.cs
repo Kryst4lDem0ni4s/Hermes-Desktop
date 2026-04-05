@@ -13,6 +13,7 @@ using Hermes.Agent.Context;
 using Hermes.Agent.Agents;
 using Hermes.Agent.Coordinator;
 using Hermes.Agent.Mcp;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Tools;
 using HermesDesktop.Services;
 using System;
@@ -108,18 +109,29 @@ public partial class App : Application
             buddyDir,
             sp.GetRequiredService<IChatClient>()));
 
+        // Soul service (persistent identity, user profile, mistakes, habits)
+        services.AddSingleton(sp => new SoulService(
+            hermesHome,
+            sp.GetRequiredService<ILogger<SoulService>>()));
+
+        // Soul extractor (LLM-powered transcript analysis)
+        services.AddSingleton(sp => new SoulExtractor(
+            sp.GetRequiredService<IChatClient>(),
+            sp.GetRequiredService<ILogger<SoulExtractor>>()));
+
         // Token budget & Prompt builder for Context Runtime
         services.AddSingleton(sp => new TokenBudget(maxTokens: 8000, recentTurnWindow: 6));
         services.AddSingleton(sp => new PromptBuilder(
             "You are Hermes, an intelligent coding assistant. Help the user with their tasks efficiently and accurately."));
 
-        // Context manager
+        // Context manager (with soul integration)
         services.AddSingleton(sp => new ContextManager(
             sp.GetRequiredService<TranscriptStore>(),
             sp.GetRequiredService<IChatClient>(),
             sp.GetRequiredService<TokenBudget>(),
             sp.GetRequiredService<PromptBuilder>(),
-            sp.GetRequiredService<ILogger<ContextManager>>()));
+            sp.GetRequiredService<ILogger<ContextManager>>(),
+            soulService: sp.GetRequiredService<SoulService>()));
 
         // MCP manager
         services.AddSingleton(sp => new McpManager(
@@ -135,7 +147,8 @@ public partial class App : Application
             permissions: sp.GetRequiredService<PermissionManager>(),
             transcripts: sp.GetRequiredService<TranscriptStore>(),
             memories: sp.GetRequiredService<MemoryManager>(),
-            contextManager: sp.GetRequiredService<ContextManager>()));
+            contextManager: sp.GetRequiredService<ContextManager>(),
+            soulService: sp.GetRequiredService<SoulService>()));
 
         // Agent service (subagent spawning, worktree isolation)
         var worktreesDir = Path.Combine(projectDir, "worktrees");

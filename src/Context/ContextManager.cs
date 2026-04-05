@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using Hermes.Agent.Core;
 using Hermes.Agent.LLM;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Transcript;
 using Microsoft.Extensions.Logging;
 
@@ -20,6 +21,7 @@ public sealed class ContextManager
     private readonly TokenBudget _budget;
     private readonly PromptBuilder _promptBuilder;
     private readonly ILogger<ContextManager> _logger;
+    private readonly SoulService? _soulService;
 
     private readonly ConcurrentDictionary<string, SessionState> _sessionStates = new();
     private readonly ConcurrentDictionary<string, SemaphoreSlim> _sessionLocks = new();
@@ -32,13 +34,15 @@ public sealed class ContextManager
         IChatClient chatClient,
         TokenBudget budget,
         PromptBuilder promptBuilder,
-        ILogger<ContextManager> logger)
+        ILogger<ContextManager> logger,
+        SoulService? soulService = null)
     {
         _transcripts = transcripts;
         _chatClient = chatClient;
         _budget = budget;
         _promptBuilder = promptBuilder;
         _logger = logger;
+        _soulService = soulService;
     }
 
     /// <summary>
@@ -121,13 +125,28 @@ public sealed class ContextManager
             // Increment turn count only after all async work succeeds
             state.TurnCount++;
 
+            // Load soul context (identity, user profile, project rules, learned behaviors)
+            string? soulContext = null;
+            if (_soulService is not null)
+            {
+                try
+                {
+                    soulContext = await _soulService.AssembleSoulContextAsync();
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogWarning(ex, "Failed to load soul context — continuing without it");
+                }
+            }
+
             // Build the prompt
             var packet = _promptBuilder.Build(new BuildRequest
             {
                 State = state,
                 CurrentUserMessage = userMessage,
                 RecentTurns = recentTurns,
-                RetrievedContext = retrievedContext
+                RetrievedContext = retrievedContext,
+                SoulContext = soulContext
             });
 
             return _promptBuilder.ToOpenAiMessages(packet);

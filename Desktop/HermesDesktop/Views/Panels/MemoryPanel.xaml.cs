@@ -2,10 +2,13 @@ using System;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text.Json;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using Microsoft.UI.Xaml.Media;
+using Hermes.Agent.Soul;
 using HermesDesktop.Services;
 
 namespace HermesDesktop.Views.Panels;
@@ -21,9 +24,23 @@ public sealed class MemoryListItem
     public SolidColorBrush AgeBrush { get; set; } = new(ColorHelper.FromArgb(255, 149, 162, 177));
 }
 
+public sealed class MistakeDisplayItem
+{
+    public string Lesson { get; set; } = "";
+    public string TimestampText { get; set; } = "";
+}
+
+public sealed class HabitDisplayItem
+{
+    public string Habit { get; set; } = "";
+    public string TimestampText { get; set; } = "";
+}
+
 public sealed partial class MemoryPanel : UserControl
 {
     private readonly string _memoryDir;
+    private SoulService? _soulService;
+    private string _activeTab = "memories";
 
     public ObservableCollection<MemoryListItem> Memories { get; } = new();
 
@@ -31,10 +48,47 @@ public sealed partial class MemoryPanel : UserControl
     {
         InitializeComponent();
         _memoryDir = Path.Combine(HermesEnvironment.HermesHomePath, "hermes-cs", "memory");
-        Loaded += (_, _) => Refresh();
+        Loaded += (_, _) =>
+        {
+            _soulService = App.Services?.GetService<SoulService>();
+            Refresh();
+        };
     }
 
     public void Refresh()
+    {
+        if (_activeTab == "memories") RefreshMemories();
+        else if (_activeTab == "soul") _ = RefreshSoulAsync();
+        else if (_activeTab == "project") _ = RefreshProjectAsync();
+    }
+
+    // ── Tab switching ──
+
+    private void SubTab_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button btn && btn.Tag is string tag)
+        {
+            _activeTab = tag;
+
+            // Update tab button styles
+            var accentBrush = Application.Current.Resources["AppAccentTextBrush"] as Brush;
+            var secondaryBrush = Application.Current.Resources["AppTextSecondaryBrush"] as Brush;
+            TabMemories.Foreground = tag == "memories" ? accentBrush : secondaryBrush;
+            TabSoul.Foreground = tag == "soul" ? accentBrush : secondaryBrush;
+            TabProject.Foreground = tag == "project" ? accentBrush : secondaryBrush;
+
+            // Switch content visibility
+            MemoriesContent.Visibility = tag == "memories" ? Visibility.Visible : Visibility.Collapsed;
+            SoulContent.Visibility = tag == "soul" ? Visibility.Visible : Visibility.Collapsed;
+            ProjectContent.Visibility = tag == "project" ? Visibility.Visible : Visibility.Collapsed;
+
+            Refresh();
+        }
+    }
+
+    // ── Memories tab ──
+
+    private void RefreshMemories()
     {
         Memories.Clear();
         if (!Directory.Exists(_memoryDir))
@@ -81,9 +135,7 @@ public sealed partial class MemoryPanel : UserControl
             catch { /* skip unreadable */ }
         }
         MemoryList.ItemsSource = Memories;
-        EmptyState.Visibility = Memories.Count == 0
-            ? Visibility.Visible
-            : Visibility.Collapsed;
+        EmptyState.Visibility = Memories.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void MemoryList_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -94,6 +146,81 @@ public sealed partial class MemoryPanel : UserControl
             EditorBorder.Visibility = Visibility.Visible;
         }
     }
+
+    // ── Soul tab ──
+
+    private async System.Threading.Tasks.Task RefreshSoulAsync()
+    {
+        if (_soulService is null) return;
+
+        try
+        {
+            SoulEditor.Text = await _soulService.LoadFileAsync(SoulFileType.Soul);
+            UserEditor.Text = await _soulService.LoadFileAsync(SoulFileType.User);
+
+            // Load mistakes
+            var mistakes = await _soulService.LoadMistakesAsync();
+            var mistakeItems = mistakes.TakeLast(20).Reverse().Select(m => new MistakeDisplayItem
+            {
+                Lesson = m.Lesson,
+                TimestampText = m.Timestamp.ToString("yyyy-MM-dd HH:mm")
+            }).ToList();
+            MistakesList.ItemsSource = mistakeItems;
+            NoMistakes.Visibility = mistakeItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            MistakesList.Visibility = mistakeItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+
+            // Load habits
+            var habits = await _soulService.LoadHabitsAsync();
+            var habitItems = habits.TakeLast(20).Reverse().Select(h => new HabitDisplayItem
+            {
+                Habit = h.Habit,
+                TimestampText = h.Timestamp.ToString("yyyy-MM-dd HH:mm")
+            }).ToList();
+            HabitsList.ItemsSource = habitItems;
+            NoHabits.Visibility = habitItems.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
+            HabitsList.Visibility = habitItems.Count > 0 ? Visibility.Visible : Visibility.Collapsed;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load soul data: {ex.Message}");
+        }
+    }
+
+    private async void SaveSoul_Click(object sender, RoutedEventArgs e)
+    {
+        if (_soulService is null) return;
+        await _soulService.SaveFileAsync(SoulFileType.Soul, SoulEditor.Text);
+    }
+
+    private async void SaveUser_Click(object sender, RoutedEventArgs e)
+    {
+        if (_soulService is null) return;
+        await _soulService.SaveFileAsync(SoulFileType.User, UserEditor.Text);
+    }
+
+    // ── Project tab ──
+
+    private async System.Threading.Tasks.Task RefreshProjectAsync()
+    {
+        if (_soulService is null) return;
+
+        try
+        {
+            AgentsEditor.Text = await _soulService.LoadFileAsync(SoulFileType.ProjectRules);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to load project rules: {ex.Message}");
+        }
+    }
+
+    private async void SaveAgents_Click(object sender, RoutedEventArgs e)
+    {
+        if (_soulService is null) return;
+        await _soulService.SaveFileAsync(SoulFileType.ProjectRules, AgentsEditor.Text);
+    }
+
+    // ── Helpers ──
 
     private static string FormatAge(DateTime timestamp)
     {

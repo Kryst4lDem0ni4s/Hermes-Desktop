@@ -3,6 +3,7 @@ namespace Hermes.Agent.Core;
 using Hermes.Agent.LLM;
 using Hermes.Agent.Permissions;
 using Hermes.Agent.Security;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Transcript;
 using Hermes.Agent.Memory;
 using Hermes.Agent.Context;
@@ -20,6 +21,7 @@ public sealed class Agent : IAgent
     private readonly TranscriptStore? _transcripts;
     private readonly MemoryManager? _memories;
     private readonly ContextManager? _contextManager;
+    private readonly SoulService? _soulService;
 
     /// <summary>Safety limit to prevent infinite tool loops.</summary>
     public int MaxToolIterations { get; set; } = 25;
@@ -46,7 +48,8 @@ public sealed class Agent : IAgent
         PermissionManager? permissions = null,
         TranscriptStore? transcripts = null,
         MemoryManager? memories = null,
-        ContextManager? contextManager = null)
+        ContextManager? contextManager = null,
+        SoulService? soulService = null)
     {
         _chatClient = chatClient;
         _logger = logger;
@@ -54,6 +57,7 @@ public sealed class Agent : IAgent
         _transcripts = transcripts;
         _memories = memories;
         _contextManager = contextManager;
+        _soulService = soulService;
     }
 
     public void RegisterTool(ITool tool)
@@ -114,6 +118,30 @@ public sealed class Agent : IAgent
             await _transcripts.SaveMessageAsync(session.Id, userMessage, ct);
 
         _logger.LogInformation("Processing message for session {SessionId}", session.Id);
+
+        // ── Soul injection (fallback path — when ContextManager is null) ──
+        // If ContextManager is available, it handles soul injection via PromptBuilder.
+        // If not, inject soul context directly as the first system message.
+        if (_contextManager is null && _soulService is not null)
+        {
+            try
+            {
+                var soulContext = await _soulService.AssembleSoulContextAsync();
+                if (!string.IsNullOrWhiteSpace(soulContext))
+                {
+                    // Insert soul as first message (before memories)
+                    session.Messages.Insert(0, new Message
+                    {
+                        Role = "system",
+                        Content = soulContext
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to load soul context, continuing without it");
+            }
+        }
 
         // ── Context manager integration ──
         // If ContextManager is available, use it to build optimized context instead of raw session.Messages
@@ -298,6 +326,25 @@ public sealed class Agent : IAgent
                 activityEntry.DurationMs = sw.ElapsedMilliseconds;
                 activityEntry.Status = result.Success ? ActivityStatus.Success : ActivityStatus.Failed;
                 activityEntry.OutputSummary = Truncate(result.Content, 200);
+
+                // ── Soul: record mistakes on tool failure ──
+                if (!result.Success && _soulService is not null)
+                {
+                    _ = Task.Run(async () =>
+                    {
+                        try
+                        {
+                            await _soulService.RecordMistakeAsync(new MistakeEntry
+                            {
+                                Context = $"Tool: {toolCall.Name}, Args: {Truncate(toolCall.Arguments, 100)}",
+                                Mistake = $"Tool execution failed: {Truncate(result.Content, 200)}",
+                                Correction = "Tool returned an error — review approach",
+                                Lesson = $"When using {toolCall.Name}, verify inputs before execution"
+                            });
+                        }
+                        catch { /* fire and forget */ }
+                    }, CancellationToken.None);
+                }
 
                 // Detect diff content
                 if (result.Content.Contains("--- a/") || result.Content.Contains("+++ b/"))

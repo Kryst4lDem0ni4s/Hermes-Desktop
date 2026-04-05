@@ -2,6 +2,7 @@ namespace Hermes.Agent.Dream;
 
 using Hermes.Agent.LLM;
 using Hermes.Agent.Core;
+using Hermes.Agent.Soul;
 using Hermes.Agent.Transcript;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Hosting;
@@ -21,6 +22,8 @@ public sealed class AutoDreamService : BackgroundService
     private readonly string _memoryDir;
     private readonly IChatClient _chatClient;
     private readonly TranscriptStore _transcriptStore;
+    private readonly SoulService? _soulService;
+    private readonly SoulExtractor? _soulExtractor;
     private DateTime _lastConsolidation = DateTime.MinValue;
 
     public AutoDreamService(
@@ -28,13 +31,17 @@ public sealed class AutoDreamService : BackgroundService
         ILoggerFactory loggerFactory,
         string memoryDir,
         IChatClient chatClient,
-        TranscriptStore transcriptStore)
+        TranscriptStore transcriptStore,
+        SoulService? soulService = null,
+        SoulExtractor? soulExtractor = null)
     {
         _logger = logger;
         _loggerFactory = loggerFactory;
         _memoryDir = memoryDir;
         _chatClient = chatClient;
         _transcriptStore = transcriptStore;
+        _soulService = soulService;
+        _soulExtractor = soulExtractor;
         Directory.CreateDirectory(memoryDir);
     }
 
@@ -103,6 +110,48 @@ public sealed class AutoDreamService : BackgroundService
             _loggerFactory.CreateLogger<ConsolidationAgent>());
 
         await consolidator.ConsolidateAsync(sessions, ct);
+
+        // ── Soul extraction: extract mistakes, habits, user profile signals ──
+        if (_soulService is not null && _soulExtractor is not null)
+        {
+            try
+            {
+                var combinedTranscript = string.Join("\n---\n",
+                    sessions.Select(s => FormatTranscriptForSoul(s)));
+
+                // Truncate to reasonable size for LLM
+                if (combinedTranscript.Length > 8000)
+                    combinedTranscript = combinedTranscript[..8000] + "\n[...truncated]";
+
+                var existingProfile = await _soulService.LoadFileAsync(SoulFileType.User);
+                var extraction = await _soulExtractor.ExtractAsync(combinedTranscript, existingProfile, ct);
+
+                // Record mistakes
+                foreach (var mistake in extraction.Mistakes)
+                    await _soulService.RecordMistakeAsync(mistake);
+
+                // Record habits
+                foreach (var habit in extraction.Habits)
+                    await _soulService.RecordHabitAsync(habit);
+
+                // Update user profile if there are significant new signals
+                if (extraction.UserProfileUpdate is not null)
+                {
+                    var currentProfile = await _soulService.LoadFileAsync(SoulFileType.User);
+                    var updatedProfile = currentProfile + "\n\n## Auto-Updated " + DateTime.UtcNow.ToString("yyyy-MM-dd") + "\n" + extraction.UserProfileUpdate;
+                    await _soulService.SaveFileAsync(SoulFileType.User, updatedProfile);
+                }
+
+                _logger.LogInformation(
+                    "Soul extraction: {Mistakes} mistakes, {Habits} habits recorded",
+                    extraction.Mistakes.Count, extraction.Habits.Count);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Soul extraction failed during dream consolidation");
+            }
+        }
+
         _lastConsolidation = DateTime.UtcNow;
 
         _logger.LogInformation("Dream consolidation complete");
@@ -129,6 +178,24 @@ public sealed class AutoDreamService : BackgroundService
     }
 
     private int GetSessionCount() => _transcriptStore.GetAllSessionIds().Count;
+
+    private static string FormatTranscriptForSoul(DreamSession session)
+    {
+        const int MaxChars = 3000;
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine($"## Session: {session.Id}");
+
+        foreach (var msg in session.Messages)
+        {
+            if (msg.Role == "tool") continue;
+            sb.AppendLine($"### {msg.Role}");
+            sb.AppendLine(msg.Content.Length > 400 ? msg.Content[..400] + "..." : msg.Content);
+            sb.AppendLine();
+            if (sb.Length > MaxChars) break;
+        }
+
+        return sb.Length > MaxChars ? sb.ToString()[..MaxChars] + "\n[...truncated]" : sb.ToString();
+    }
 }
 
 /// <summary>

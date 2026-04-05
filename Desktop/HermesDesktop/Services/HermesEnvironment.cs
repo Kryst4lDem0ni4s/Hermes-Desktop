@@ -35,6 +35,15 @@ internal static class HermesEnvironment
 
     internal static bool HermesInstalled => File.Exists(HermesCommandPath);
 
+    // ── Soul system paths ──
+    internal static string SoulDir => Path.Combine(HermesHomePath, "soul");
+    internal static string SoulFilePath => Path.Combine(HermesHomePath, "SOUL.md");
+    internal static string UserFilePath => Path.Combine(HermesHomePath, "USER.md");
+    internal static string MistakesFilePath => Path.Combine(SoulDir, "mistakes.jsonl");
+    internal static string HabitsFilePath => Path.Combine(SoulDir, "habits.jsonl");
+    internal static string ProjectAgentsPath(string projectDir) =>
+        Path.Combine(HermesHomePath, "projects", Path.GetFileName(projectDir), "AGENTS.md");
+
     /// <summary>Create LlmConfig from config.yaml for DI.</summary>
     internal static Hermes.Agent.LLM.LlmConfig CreateLlmConfig() => new()
     {
